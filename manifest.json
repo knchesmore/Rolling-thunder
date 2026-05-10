@@ -1,4 +1,5 @@
 {
+  "manifest_version": 1,
   "name": "TTRPG Dice Roller",
   "description": "Roll any dice combination with named preset saves for one-click rolls.",
   "author": "Custom Extension",
