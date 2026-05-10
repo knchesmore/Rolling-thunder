@@ -9,7 +9,7 @@
       "title": "Dice Roller",
       "description": "Roll dice and manage presets",
       "icon": "/icon.svg",
-      "href": "/action.html",
+      "href": "/index.html",
       "height": 600,
       "width": 360
     }
