@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dice Roller</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0f0d0b;
+      --surface:   #1a1714;
+      --border:    #3a2e22;
+      --gold:      #c9913a;
+      --gold-dim:  #7a5520;
+      --red:       #9e2b1e;
+      --red-bright:#d43f2e;
+      --text:      #e8dcc8;
+      --muted:     #8a7a64;
+      --success:   #4a8c5c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 15px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Parchment texture overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app { position: relative; z-index: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      padding: 8px 0 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header h1 {
+      font-family: 'MedievalSharp', 'Crimson Pro', serif;
+      font-size: 20px;
+      color: var(--gold);
+      letter-spacing: 2px;
+      text-shadow: 0 0 20px rgba(201,145,58,0.4);
+    }
+    .header p { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 2px; }
+
+    /* ── Section labels ── */
+    .section-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gold-dim);
+      margin-bottom: 4px;
+    }
+
+    /* ── Dice grid ── */
+    .dice-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .dice-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Crimson Pro', serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      position: relative;
+      overflow: hidden;
+    }
+    .dice-btn svg { width: 28px; height: 28px; }
+    .dice-btn span { font-size: 11px; color: var(--muted); }
+    .dice-btn:hover { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 8px rgba(201,145,58,0.2); }
+    .dice-btn.active { border-color: var(--gold); background: rgba(201,145,58,0.1); color: var(--gold); }
+    .dice-btn .count-badge {
+      position: absolute; top: 3px; right: 3px;
+      background: var(--gold); color: var(--bg);
+      border-radius: 9px; font-size: 9px; font-weight: 700;
+      padding: 1px 5px; display: none;
+    }
+    .dice-btn.active .count-badge { display: block; }
+
+    /* ── Formula bar ── */
+    .formula-row {
+      display: flex;
+      gap: 6px;
+      align-items: stretch;
+    }
+    .formula-display {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: 'Crimson Pro', serif;
+      font-size: 16px;
+      color: var(--gold);
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .formula-display.empty { color: var(--muted); font-style: italic; font-size: 13px; }
+
+    .mod-input-wrap { display: flex; align-items: center; gap: 4px; }
+    .mod-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .mod-input {
+      width: 52px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Crimson Pro', serif;
+      font-size: 15px;
+      text-align: center;
+      padding: 6px 4px;
+    }
+    .mod-input:focus { outline: none; border-color: var(--gold); }
+
+    /* ── Roll button ── */
+    .roll-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--red);
+      border: 1px solid #7a1e14;
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'MedievalSharp', 'Crimson Pro', serif;
+      font-size: 17px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+      overflow: hidden;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+    .roll-btn::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, transparent 60%);
+    }
+    .roll-btn:hover { background: var(--red-bright); box-shadow: 0 0 14px rgba(212,63,46,0.4); transform: translateY(-1px); }
+    .roll-btn:active { transform: translateY(0); }
+    .roll-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* ── Result display ── */
+    .result-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      min-height: 64px;
+      position: relative;
+      overflow: hidden;
+      display: none;
+    }
+    .result-box.visible { display: block; }
+    .result-box::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+    .result-total {
+      font-family: 'MedievalSharp', serif;
+      font-size: 36px;
+      color: var(--gold);
+      text-shadow: 0 0 20px rgba(201,145,58,0.5);
+      line-height: 1;
+    }
+    .result-label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .result-breakdown { font-size: 12px; color: var(--muted); margin-top: 4px; font-style: italic; }
+    .result-dice-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .die-result {
+      background: rgba(201,145,58,0.1);
+      border: 1px solid var(--gold-dim);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 12px;
+      color: var(--text);
+    }
+    .die-result.max { border-color: var(--gold); color: var(--gold); font-weight: 700; }
+    .die-result.min { border-color: var(--red); color: var(--red-bright); }
+
+    /* ── Clear / actions row ── */
+    .actions-row { display: flex; gap: 6px; }
+    .sm-btn {
+      flex: 1;
+      padding: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: 'Crimson Pro', serif;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .sm-btn:hover { border-color: var(--gold-dim); color: var(--text); }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .divider span { font-size: 10px; color: var(--gold-dim); text-transform: uppercase; letter-spacing: 2px; white-space: nowrap; }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── Save preset panel ── */
+    .save-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .save-panel.open { display: flex; }
+    .preset-name-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Crimson Pro', serif;
+      font-size: 14px;
+      padding: 7px 10px;
+    }
+    .preset-name-input:focus { outline: none; border-color: var(--gold); }
+    .preset-name-input::placeholder { color: var(--muted); font-style: italic; }
+    .save-confirm-btn {
+      padding: 7px;
+      background: var(--success);
+      border: 1px solid #2d6b3f;
+      border-radius: 6px;
+      color: #fff;
+      font-family: 'Crimson Pro', serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .save-confirm-btn:hover { background: #5aab72; }
+
+    /* ── Presets list ── */
+    .presets-list { display: flex; flex-direction: column; gap: 5px; max-height: 220px; overflow-y: auto; }
+    .presets-list::-webkit-scrollbar { width: 4px; }
+    .presets-list::-webkit-scrollbar-track { background: var(--bg); }
+    .presets-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .preset-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 8px;
+      transition: all 0.15s;
+    }
+    .preset-item:hover { border-color: var(--gold-dim); }
+    .preset-roll-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .preset-name {
+      font-family: 'Crimson Pro', serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .preset-formula { font-size: 11px; color: var(--gold-dim); }
+    .preset-roll-btn:hover .preset-name { color: var(--gold); }
+
+    .preset-load-btn, .preset-delete-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 4px 6px;
+      font-size: 11px;
+      transition: all 0.12s;
+    }
+    .preset-load-btn { color: var(--muted); }
+    .preset-load-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+    .preset-delete-btn { color: var(--muted); }
+    .preset-delete-btn:hover { border-color: var(--red); color: var(--red-bright); }
+
+    .no-presets { text-align: center; color: var(--muted); font-style: italic; font-size: 13px; padding: 12px 0; }
+
+    /* ── Animations ── */
+    @keyframes rollShake {
+      0%,100% { transform: translateX(0) rotate(0deg); }
+      20% { transform: translateX(-3px) rotate(-2deg); }
+      40% { transform: translateX(3px) rotate(2deg); }
+      60% { transform: translateX(-2px) rotate(-1deg); }
+      80% { transform: translateX(2px) rotate(1deg); }
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .result-box.visible { animation: fadeIn 0.25s ease; }
+    .rolling { animation: rollShake 0.35s ease; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>⚔ Dice Roller ⚔</h1>
+    <p>Click dice to build your roll</p>
+  </div>
+
+  <!-- Dice selector -->
+  <div>
+    <div class="section-label">Select Dice</div>
+    <div class="dice-grid" id="diceGrid">
+      <!-- built by JS -->
+    </div>
+  </div>
+
+  <!-- Formula + modifier -->
+  <div>
+    <div class="section-label">Roll Formula</div>
+    <div class="formula-row">
+      <div class="formula-display empty" id="formulaDisplay">click dice above…</div>
+    </div>
+    <div style="margin-top:6px; display:flex; align-items:center; gap:8px;">
+      <div class="mod-input-wrap">
+        <span class="mod-label">Modifier</span>
+        <input class="mod-input" id="modInput" type="number" value="0" step="1" />
+      </div>
+      <div class="actions-row" style="flex:1;">
+        <button class="sm-btn" onclick="clearAll()">✕ Clear</button>
+        <button class="sm-btn" onclick="toggleSavePanel()">＋ Save Preset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Roll button -->
+  <button class="roll-btn" id="rollBtn" onclick="rollDice()" disabled>Roll the Dice</button>
+
+  <!-- Result -->
+  <div class="result-box" id="resultBox">
+    <div class="result-label" id="resultLabel">Result</div>
+    <div class="result-total" id="resultTotal">—</div>
+    <div class="result-dice-list" id="resultDiceList"></div>
+    <div class="result-breakdown" id="resultBreakdown"></div>
+  </div>
+
+  <!-- Save Preset -->
+  <div class="save-panel" id="savePanel">
+    <div class="section-label">Save Current Roll as Preset</div>
+    <input class="preset-name-input" id="presetNameInput" type="text" placeholder="e.g. Sneak Attack, Fireball, Greatsword…" maxlength="40" />
+    <button class="save-confirm-btn" onclick="savePreset()">Save Preset</button>
+  </div>
+
+  <!-- Presets -->
+  <div>
+    <div class="divider"><span>Saved Presets</span></div>
+    <div class="presets-list" id="presetsList">
+      <!-- built by JS -->
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Dice config ──────────────────────────────────────────────────────────────
+const DICE = [
+  { label: 'd4',   sides: 4,   color: '#c9913a' },
+  { label: 'd6',   sides: 6,   color: '#7ec8a0' },
+  { label: 'd8',   sides: 8,   color: '#6fa8dc' },
+  { label: 'd10',  sides: 10,  color: '#a78bfa' },
+  { label: 'd12',  sides: 12,  color: '#f9a74b' },
+  { label: 'd20',  sides: 20,  color: '#e05c5c' },
+  { label: 'd100', sides: 100, color: '#94a3b8' },
+  { label: 'd2',   sides: 2,   color: '#c084fc' },
+];
+
+// SVG shapes for each die
+function dieSVG(sides, color) {
+  const shapes = {
+    4:   `<polygon points="50,8 92,84 8,84" fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="2"/>`,
+    6:   `<rect x="10" y="10" width="60" height="60" rx="8" fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="2"/>`,
+    8:   `<polygon points="40,6 74,40 40,74 6,40" fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="2"/>`,
+    10:  `<polygon points="40,4 76,28 76,64 40,76 4,64 4,28" fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="2"/>`,
+    12:  `<polygon points="40,4 72,16 80,48 60,76 20,76 0,48 8,16" fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="2"/>`,
+    20:  `<polygon points="40,2 78,24 78,66 40,80 2,66 2,24" fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="2"/>`,
+    100: `<circle cx="40" cy="40" r="34" fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="2"/>`,
+    2:   `<ellipse cx="40" cy="40" rx="22" ry="36" fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="2"/>`,
+  };
+  return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">${shapes[sides] || shapes[6]}</svg>`;
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+let counts = {}; // { sides: count }
+DICE.forEach(d => counts[d.sides] = 0);
+
+let presets = JSON.parse(localStorage.getItem('diceroller_presets') || '[]');
+
+// ── Build dice grid ──────────────────────────────────────────────────────────
+function buildDiceGrid() {
+  const grid = document.getElementById('diceGrid');
+  grid.innerHTML = '';
+  DICE.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'dice-btn';
+    btn.id = `die_${d.sides}`;
+    btn.innerHTML = `${dieSVG(d.sides, d.color)}<span>${d.label}</span><span class="count-badge" id="badge_${d.sides}">1</span>`;
+    btn.onclick = () => addDie(d.sides);
+    grid.appendChild(btn);
+  });
+}
+
+// ── Die interactions ─────────────────────────────────────────────────────────
+function addDie(sides) {
+  counts[sides]++;
+  updateDiceBtn(sides);
+  updateFormula();
+}
+
+function updateDiceBtn(sides) {
+  const btn = document.getElementById(`die_${sides}`);
+  const badge = document.getElementById(`badge_${sides}`);
+  const n = counts[sides];
+  badge.textContent = n;
+  btn.classList.toggle('active', n > 0);
+}
+
+function updateFormula() {
+  const display = document.getElementById('formulaDisplay');
+  const parts = buildParts();
+  const mod = parseInt(document.getElementById('modInput').value) || 0;
+
+  if (parts.length === 0 && mod === 0) {
+    display.textContent = 'click dice above…';
+    display.classList.add('empty');
+    document.getElementById('rollBtn').disabled = true;
+    return;
+  }
+
+  display.classList.remove('empty');
+  let html = parts.join(' + ');
+  if (mod > 0) html += ` + ${mod}`;
+  else if (mod < 0) html += ` − ${Math.abs(mod)}`;
+  display.innerHTML = html || '—';
+  document.getElementById('rollBtn').disabled = parts.length === 0;
+}
+
+function buildParts() {
+  return DICE
+    .filter(d => counts[d.sides] > 0)
+    .map(d => `${counts[d.sides]}d${d.sides}`);
+}
+
+function getFormulaString() {
+  const parts = buildParts();
+  const mod = parseInt(document.getElementById('modInput').value) || 0;
+  let s = parts.join('+');
+  if (mod !== 0) s += (mod > 0 ? `+${mod}` : `${mod}`);
+  return s;
+}
+
+function clearAll() {
+  DICE.forEach(d => { counts[d.sides] = 0; updateDiceBtn(d.sides); });
+  document.getElementById('modInput').value = 0;
+  updateFormula();
+  document.getElementById('resultBox').classList.remove('visible');
+}
+
+// ── Rolling ───────────────────────────────────────────────────────────────────
+function rollSingle(sides) {
+  return Math.floor(Math.random() * sides) + 1;
+}
+
+function rollDice(formulaOverride) {
+  let rollCounts = formulaOverride ? parseFormula(formulaOverride) : { counts: {...counts}, mod: parseInt(document.getElementById('modInput').value) || 0 };
+  if (!rollCounts) return;
+
+  const { counts: rc, mod } = rollCounts;
+  const rollBtn = document.getElementById('rollBtn');
+  rollBtn.classList.add('rolling');
+  setTimeout(() => rollBtn.classList.remove('rolling'), 350);
+
+  let total = mod;
+  let breakdownParts = [];
+  const diceListEl = document.getElementById('resultDiceList');
+  diceListEl.innerHTML = '';
+
+  DICE.forEach(d => {
+    const n = rc[d.sides] || 0;
+    if (n === 0) return;
+    let groupResults = [];
+    for (let i = 0; i < n; i++) {
+      const r = rollSingle(d.sides);
+      groupResults.push(r);
+      total += r;
+      const chip = document.createElement('div');
+      chip.className = 'die-result' + (r === d.sides ? ' max' : r === 1 ? ' min' : '');
+      chip.textContent = `d${d.sides}: ${r}`;
+      diceListEl.appendChild(chip);
+    }
+    breakdownParts.push(`${n}d${d.sides} [${groupResults.join(', ')}]`);
+  });
+
+  document.getElementById('resultTotal').textContent = total;
+  const label = formulaOverride || getFormulaString();
+  document.getElementById('resultLabel').textContent = label;
+  document.getElementById('resultBreakdown').textContent = breakdownParts.join('  ') + (mod !== 0 ? `  mod: ${mod > 0 ? '+' : ''}${mod}` : '');
+
+  const box = document.getElementById('resultBox');
+  box.classList.remove('visible');
+  void box.offsetWidth; // reflow to re-trigger animation
+  box.classList.add('visible');
+}
+
+function parseFormula(str) {
+  // e.g. "2d6+1d8+3" or "1d20-2"
+  const rc = {};
+  DICE.forEach(d => rc[d.sides] = 0);
+  let mod = 0;
+  const diceRegex = /(\d+)d(\d+)/gi;
+  let match;
+  while ((match = diceRegex.exec(str)) !== null) {
+    const sides = parseInt(match[2]);
+    const n = parseInt(match[1]);
+    if (rc[sides] !== undefined) rc[sides] += n;
+    else rc[sides] = n; // unknown die type
+  }
+  // extract trailing modifier
+  const modMatch = str.replace(/\d+d\d+/gi, '').match(/([+-]\d+)/);
+  if (modMatch) mod = parseInt(modMatch[1]);
+  return { counts: rc, mod };
+}
+
+// ── Preset management ────────────────────────────────────────────────────────
+function savePresets() {
+  localStorage.setItem('diceroller_presets', JSON.stringify(presets));
+}
+
+function toggleSavePanel() {
+  const panel = document.getElementById('savePanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) document.getElementById('presetNameInput').focus();
+}
+
+function savePreset() {
+  const name = document.getElementById('presetNameInput').value.trim();
+  if (!name) { document.getElementById('presetNameInput').focus(); return; }
+  const formula = getFormulaString();
+  if (!formula) { alert('Build a roll formula first!'); return; }
+
+  presets.push({ id: Date.now(), name, formula });
+  savePresets();
+  renderPresets();
+
+  document.getElementById('presetNameInput').value = '';
+  document.getElementById('savePanel').classList.remove('open');
+}
+
+function deletePreset(id) {
+  presets = presets.filter(p => p.id !== id);
+  savePresets();
+  renderPresets();
+}
+
+function loadPreset(formula) {
+  // Parse and load into current dice state
+  const parsed = parseFormula(formula);
+  DICE.forEach(d => { counts[d.sides] = parsed.counts[d.sides] || 0; updateDiceBtn(d.sides); });
+  document.getElementById('modInput').value = parsed.mod;
+  updateFormula();
+}
+
+function rollPreset(id) {
+  const preset = presets.find(p => p.id === id);
+  if (!preset) return;
+  // Load it and roll
+  loadPreset(preset.formula);
+  setTimeout(() => rollDice(preset.formula), 50);
+}
+
+function renderPresets() {
+  const list = document.getElementById('presetsList');
+  if (presets.length === 0) {
+    list.innerHTML = '<div class="no-presets">No presets saved yet.<br>Build a roll and click "Save Preset".</div>';
+    return;
+  }
+  list.innerHTML = '';
+  presets.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'preset-item';
+    item.innerHTML = `
+      <button class="preset-roll-btn" onclick="rollPreset(${p.id})" title="Click to roll this preset">
+        <div class="preset-name">${escapeHTML(p.name)}</div>
+        <div class="preset-formula">${escapeHTML(p.formula)}</div>
+      </button>
+      <button class="preset-load-btn" onclick="loadPreset('${escapeHTML(p.formula)}')" title="Load into builder">↑ Load</button>
+      <button class="preset-delete-btn" onclick="deletePreset(${p.id})" title="Delete preset">✕</button>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function escapeHTML(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Modifier input updates formula live ─────────────────────────────────────
+document.getElementById('modInput').addEventListener('input', updateFormula);
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+buildDiceGrid();
+updateFormula();
+renderPresets();
+</script>
+</body>
+</html>
