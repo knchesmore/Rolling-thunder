@@ -5,7 +5,7 @@
   "author": "Custom Extension",
   "version": "1.0.0",
   "icon": "/icon.svg",
-  "actions": [
+  "action": [
     {
       "title": "Dice Roller",
       "description": "Roll dice and manage presets",
