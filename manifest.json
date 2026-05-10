@@ -5,6 +5,7 @@
   "description": "Roll any dice combination with named preset saves for one-click rolls.",
   "author": "Custom Extension",
   "icon": "icon.svg",
+  "base_url": "https://github.io",
   "action": {
     "title": "Dice Roller",
     "icon": "icon.svg",
@@ -12,4 +13,3 @@
     "height": 600,
     "width": 360
   }
-}
