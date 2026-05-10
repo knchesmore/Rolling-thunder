@@ -1,16 +1,15 @@
 {
   "manifest_version": 1,
   "name": "TTRPG Dice Roller",
+  "version": "1.0.0",
   "description": "Roll any dice combination with named preset saves for one-click rolls.",
   "author": "Custom Extension",
-  "version": "1.0.0",
   "icon": "/icon.svg",
   "action": {
-      "title": "Dice Roller",
-      "description": "Roll dice and manage presets",
-      "icon": "/icon.svg",
-      "href": "/index.html",
-      "height": 600,
-      "width": 360
+    "title": "Dice Roller",
+    "icon": "/icon.svg",
+    "popover": "/index.html",
+    "height": 600,
+    "width": 360
   }
 }
