@@ -19,7 +19,7 @@ A dark-fantasy styled dice roller for Owlbear Rodeo with **named preset saves** 
 
 ### Option A — Host it yourself (recommended)
 
-1. Upload all files (`manifest.json`, `action.html`, `icon.svg`) to any static hosting:
+1. Upload all files (`manifest.json`, `index.html`, `icon.svg`) to any static hosting:
    - [Netlify Drop](https://app.netlify.com/drop) — drag & drop, free, instant URL
    - [GitHub Pages](https://pages.github.com/)
    - [Vercel](https://vercel.com/), [Cloudflare Pages](https://pages.cloudflare.com/), etc.
@@ -60,7 +60,7 @@ A dark-fantasy styled dice roller for Owlbear Rodeo with **named preset saves** 
 ```
 dice-roller-extension/
 ├── manifest.json   ← OBR extension manifest
-├── action.html     ← The dice roller UI panel
+├── index.html     ← The dice roller UI panel
 ├── icon.svg        ← Extension icon
 └── README.md       ← This file
 ```
