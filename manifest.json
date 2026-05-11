@@ -4,11 +4,11 @@
   "version": "1.0.0",
   "description": "Roll any dice combination with named preset saves for one-click rolls.",
   "author": "Custom Extension",
-  "icon": "/icon.svg",
+  "icon": "icon.svg",
   "action": {
     "title": "Dice Roller",
-    "icon": "/icon.svg",
-    "popover": "/index.html",
+    "icon": "icon.svg",
+    "popover": "index.html",
     "height": 600,
     "width": 360
   }
