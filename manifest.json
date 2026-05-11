@@ -4,11 +4,11 @@
   "version": "1.0.0",
   "description": "Roll any dice combination with named preset saves for one-click rolls.",
   "author": "Custom Extension",
-  "icon": "icon.svg",
+  "icon": "https://knchesmore.github.io/Rolling-thunder/icon.svg",
   "action": {
     "title": "Dice Roller",
-    "icon": "icon.svg",
-    "popover": "index.html",
+    "icon": "https://knchesmore.github.io/Rolling-thunder/icon.svg",
+    "popover": "https://knchesmore.github.io/Rolling-thunder/index.html",
     "height": 600,
     "width": 360
   }
